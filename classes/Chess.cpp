@@ -124,6 +124,10 @@ bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
     int pieceColor = bit.gameTag() & 128;
     if (pieceColor != currentPlayer) return false;
 
+    _grid->forEachSquare([](ChessSquare* sq, int x, int y) {
+        sq->setHighlighted(false);
+    });
+
     bool returnVal = false;
     ChessSquare* square = (ChessSquare *)&src;
     if (square) {
@@ -154,6 +158,16 @@ bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
     }
 
     return false;
+}
+
+void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
+{
+    _grid->forEachSquare([](ChessSquare* sq, int x, int y) {
+        sq->setHighlighted(false);
+    });
+    
+    _moves = generateAllMoves();
+    endTurn();
 }
 
 void Chess::stopGame()
@@ -239,8 +253,8 @@ void Chess::generatePawnMoveList(std::vector<BitMove>& moves, const BitboardElem
 
     int shiftForward = (color == WHITE) ? 8 : -8;
     int doubleShift = (color == WHITE) ? 16 : -16;
-    int leftCaptureShift = (color == WHITE) ? 7 : -9;
-    int rightCaptureShift = (color == WHITE) ? 9 : -7;
+    int leftCaptureShift = (color == WHITE) ? 7 : -7;
+    int rightCaptureShift = (color == WHITE) ? 9 : -9;
 
     addPawnBitboardMovesToList(moves, singleMoves, shiftForward);
     addPawnBitboardMovesToList(moves, doubleMoves, doubleShift);
@@ -292,7 +306,19 @@ std::vector<BitMove> Chess::generateAllMoves()
     uint64_t blackKnights = 0ULL;
     uint64_t blackPawns = 0ULL;
 
+    // Occupancy Masks
+    uint64_t whiteOccupancy = 0ULL;
+    uint64_t blackOccupancy = 0ULL;
+
     for (int i = 0; i < 64; i++) {
+        if (state[i] != '0') {
+            if (state[i] == toupper(state[i])) {
+                whiteOccupancy |= 1ULL << i;
+            } else {
+                blackOccupancy |= 1ULL << i;
+            }
+        }
+
         switch (toupper(state[i])) {
             case 'K':
                 break;
@@ -319,12 +345,11 @@ std::vector<BitMove> Chess::generateAllMoves()
             }
     }
 
-    uint64_t whiteOccupancy = whiteKnights | whitePawns;
-    uint64_t blackOccupancy = blackKnights | blackPawns;
-
+    // Generate White Moves
     generateKnightMoves(moves, whiteKnights, ~whiteOccupancy);
     generatePawnMoveList(moves, whitePawns, ~whiteOccupancy, blackOccupancy, WHITE);
 
+    // Generate Black Moves
     generateKnightMoves(moves, blackKnights, ~blackOccupancy);
     generatePawnMoveList(moves, blackPawns, ~blackOccupancy, whiteOccupancy, BLACK);
 

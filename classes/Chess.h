@@ -2,19 +2,9 @@
 
 #include "Game.h"
 #include "Grid.h"
+#include "Bitboard.h"
 
 constexpr int pieceSize = 80;
-
-enum ChessPiece
-{
-    NoPiece,
-    Pawn,
-    Knight,
-    Bishop,
-    Rook,
-    Queen,
-    King
-};
 
 class Chess : public Game
 {

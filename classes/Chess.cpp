@@ -214,6 +214,40 @@ void Chess::setStateString(const std::string &s)
     });
 }
 
+void Chess::addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitboardElement bitBoard, const int shift) {
+    if (bitBoard.getData() == 0) {
+        return;
+    }
+    bitBoard.forEachBit([&](int toSquare){
+        int fromSquare = toSquare - shift;
+        moves.emplace_back(fromSquare, toSquare, Pawn);
+    });
+}
+
+void Chess::generatePawnMoveList(std::vector<BitMove>& moves, const BitboardElement Pawns, const BitboardElement emptySquares, const BitboardElement enemyPieces, char color) {
+    if (Pawns.getData() == 0) {
+        return;
+    }
+
+    // Single Moves
+    BitboardElement singleMoves = (color == WHITE) ? (Pawns.getData() << 8) & emptySquares.getData() : (Pawns.getData() >> 8) & emptySquares.getData();
+    //Double Moves
+    BitboardElement doubleMoves = (color == WHITE) ? ((singleMoves.getData() & RANK_3) << 8) & emptySquares.getData() : ((singleMoves.getData() & RANK_6) >> 8) & emptySquares.getData();
+    // Captures
+    BitboardElement leftCaptures = (color == WHITE) ? ((Pawns.getData() & NOT_FILE_A) << 7) & enemyPieces.getData() : ((Pawns.getData() & NOT_FILE_A) >> 7) & enemyPieces.getData();
+    BitboardElement rightCaptures =  (color == WHITE) ? ((Pawns.getData() & NOT_FILE_H) << 9) & enemyPieces.getData() : ((Pawns.getData() & NOT_FILE_H) >> 9) & enemyPieces.getData();
+
+    int shiftForward = (color == WHITE) ? 8 : -8;
+    int doubleShift = (color == WHITE) ? 16 : -16;
+    int leftCaptureShift = (color == WHITE) ? 7 : -9;
+    int rightCaptureShift = (color == WHITE) ? 9 : -7;
+
+    addPawnBitboardMovesToList(moves, singleMoves, shiftForward);
+    addPawnBitboardMovesToList(moves, doubleMoves, doubleShift);
+    addPawnBitboardMovesToList(moves, leftCaptures, leftCaptureShift);
+    addPawnBitboardMovesToList(moves, rightCaptures, rightCaptureShift);
+}
+
 BitboardElement Chess::generateKnightMoveBitboard(int square) {
     BitboardElement bitboard = 0ULL;
     int rank = square / 8;
@@ -250,20 +284,49 @@ std::vector<BitMove> Chess::generateAllMoves()
     moves.reserve(32);
     std::string state = stateString();
 
+    // White Piece Positions
     uint64_t whiteKnights = 0ULL;
     uint64_t whitePawns = 0ULL;
 
+    // Black Piece Positions
+    uint64_t blackKnights = 0ULL;
+    uint64_t blackPawns = 0ULL;
+
     for (int i = 0; i < 64; i++) {
-        if (state[i] == 'N') {
-            whiteKnights |= 1ULL << i;
-        } else if (state[i] == 'P') {
-            whitePawns |= 1ULL << i;
-        }
+        switch (toupper(state[i])) {
+            case 'K':
+                break;
+            case 'Q':
+                break;
+            case 'R':
+                break;
+            case 'N':
+                if (state[i] == toupper(state[i])) {
+                    whiteKnights |= 1ULL << i;
+                } else {
+                    blackKnights |= 1ULL << i;
+                }
+                break;
+            case 'B':
+                break;
+            case 'P':
+                if (state[i] == toupper(state[i])) {
+                    whitePawns |= 1ULL << i;
+                } else {
+                    blackPawns |= 1ULL << i;
+                }
+                break;
+            }
     }
 
-    uint64_t occupancy = whiteKnights | whitePawns;
-    generateKnightMoves(moves, whiteKnights, ~occupancy);
-    // generatePawnMoveList(moves, whitePawns, ~occupancy, WHITE);
+    uint64_t whiteOccupancy = whiteKnights | whitePawns;
+    uint64_t blackOccupancy = blackKnights | blackPawns;
+
+    generateKnightMoves(moves, whiteKnights, ~whiteOccupancy);
+    generatePawnMoveList(moves, whitePawns, ~whiteOccupancy, blackOccupancy, WHITE);
+
+    generateKnightMoves(moves, blackKnights, ~blackOccupancy);
+    generatePawnMoveList(moves, blackPawns, ~blackOccupancy, whiteOccupancy, BLACK);
 
     return moves;
 }

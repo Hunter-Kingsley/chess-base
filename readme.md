@@ -1,13 +1,7 @@
-Fork or clone your this chess project into a new GitHub repository.
+# Fen Strings
+I implemented a simple algorithm to parse the FEN string by looping over it and either going a certain amount of squares forward, going to the next line, or placing the correct piece down depending on the character within the string
 
-Add support for FEN stringsLinks to an external site. to your game setup so that instead of the current way you are setting up your game board you are setting it up with a call similar to the following call.
+# Knight, Pawn, and King Movement
+I used bitboards to create and track the possible moves for these pieces (as I will do with future pieces). The King and Knight use identical logic. I have an array to store the possible moves for each piece from all 64 squares and functions for each piece that add that piece's move offset and add all those possible move bitboards into the moves list
 
-FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
-
-Your routine should be able to take just the board position portion of a FEN string, or the entire FEN string like so:
-
-FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-(you can ignore the end for now)
-
-This will allow you to quickly check that your castling, promotion and en passant code is working.
+The pawns are less straightforward because black and white pawns do not move the same way from the same squares. To create the correct moves for each pawn, I have to create a total of 8 different bitboards (one for single moves, one for double moves based on if they did a single move from the starting position, one for both left and right captures, and then do all that twice for black and white pawns). After creating all those bitboards, I can take the shift needed to go from the pawn's starting position to all the possible places it's allowed to go and add those to the move list

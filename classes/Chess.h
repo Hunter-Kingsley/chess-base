@@ -63,6 +63,7 @@ private:
     std::vector<BitMove> _moves;
 
     BitboardElement _knightBitboards[64];
+    BitboardElement _kingBitboards[64];
 
     Bit* PieceForPlayer(const int playerNumber, ChessPiece piece);
     Player* ownerAt(int x, int y) const;
@@ -73,6 +74,8 @@ private:
     std::vector<BitMove> generateAllMoves();
     void generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t emptySquares);
     BitboardElement generateKnightMoveBitboard(int square);
+    void generateKingMoves(std::vector<BitMove>& moves, BitboardElement kingBoard, uint64_t emptySquares);
+    BitboardElement generateKingMoveBitboard(int square);
 
     Grid* _grid;
 };

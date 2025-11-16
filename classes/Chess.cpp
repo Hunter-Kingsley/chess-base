@@ -51,6 +51,7 @@ void Chess::setUpBoard()
     // Populate Knight Bitboards for each square
     for (int sq = 0; sq < 64; ++sq) {
     _knightBitboards[sq] = generateKnightMoveBitboard(sq);
+    _kingBitboards[sq] = generateKingMoveBitboard(sq);
     }
 
     _moves = generateAllMoves();
@@ -292,6 +293,37 @@ void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitboardElement kni
     });
 }
 
+BitboardElement Chess::generateKingMoveBitboard(int square) {
+    BitboardElement bitboard = 0ULL;
+    int rank = square / 8;
+    int file = square % 8;
+
+    std::pair<int, int> kingOffsets[] = {
+        { -1, 1 }, { 0, 1 }, { 1, 1 },
+        {-1, 0 },            { 1, 0 },
+        {-1, -1}, { 0, -1 }, { 1, -1 } 
+    };
+
+    constexpr uint64_t oneBit = 1;
+    for (auto [dr, df] : kingOffsets) {
+        int r = rank + dr, f = file + df;
+        if (r >= 0 && r < 8 && f >= 0 && f < 8) {
+            bitboard |= oneBit << (r * 8 + f);
+        }
+    }
+
+    return bitboard;
+}
+
+void Chess::generateKingMoves(std::vector<BitMove>& moves, BitboardElement kingBoard, uint64_t emptySquares) {
+    kingBoard.forEachBit([&](int fromSquare){
+        BitboardElement moveBitBoard = BitboardElement(_kingBitboards[fromSquare].getData() & emptySquares);
+        moveBitBoard.forEachBit([&](int toSquare){
+            moves.emplace_back(fromSquare, toSquare, King);
+        });
+    });
+}
+
 std::vector<BitMove> Chess::generateAllMoves()
 {
     std::vector<BitMove> moves;
@@ -301,10 +333,12 @@ std::vector<BitMove> Chess::generateAllMoves()
     // White Piece Positions
     uint64_t whiteKnights = 0ULL;
     uint64_t whitePawns = 0ULL;
+    uint64_t whiteKing = 0ULL;
 
     // Black Piece Positions
     uint64_t blackKnights = 0ULL;
     uint64_t blackPawns = 0ULL;
+    uint64_t blackKing = 0ULL;
 
     // Occupancy Masks
     uint64_t whiteOccupancy = 0ULL;
@@ -321,6 +355,11 @@ std::vector<BitMove> Chess::generateAllMoves()
 
         switch (toupper(state[i])) {
             case 'K':
+            if (state[i] == toupper(state[i])) {
+                    whiteKing |= 1ULL << i;
+                } else {
+                    blackKing |= 1ULL << i;
+                }
                 break;
             case 'Q':
                 break;
@@ -348,10 +387,12 @@ std::vector<BitMove> Chess::generateAllMoves()
     // Generate White Moves
     generateKnightMoves(moves, whiteKnights, ~whiteOccupancy);
     generatePawnMoveList(moves, whitePawns, ~whiteOccupancy, blackOccupancy, WHITE);
+    generateKingMoves(moves, whiteKing, ~whiteOccupancy);
 
     // Generate Black Moves
     generateKnightMoves(moves, blackKnights, ~blackOccupancy);
     generatePawnMoveList(moves, blackPawns, ~blackOccupancy, whiteOccupancy, BLACK);
+    generateKingMoves(moves, blackKing, ~blackOccupancy);
 
     return moves;
 }

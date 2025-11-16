@@ -48,6 +48,12 @@ void Chess::setUpBoard()
     _grid->initializeChessSquares(pieceSize, "boardsquare.png");
     FENtoBoard("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR");
 
+    // Populate Knight Bitboards for each square
+    for (int sq = 0; sq < 64; ++sq) {
+    _knightBitboards[sq] = generateKnightMoveBitboard(sq);
+    }
+
+    _moves = generateAllMoves();
     startGame();
 }
 
@@ -89,6 +95,9 @@ void Chess::FENtoBoard(const std::string& fen) {
             case 'N':
                 piece = Knight;
                 break;
+            case 'B':
+                piece = Bishop;
+                break;
             case 'P':
                 piece = Pawn;
                 break;
@@ -111,16 +120,40 @@ bool Chess::actionForEmptyHolder(BitHolder &holder)
 
 bool Chess::canBitMoveFrom(Bit &bit, BitHolder &src)
 {
-    // need to implement friendly/unfriendly in bit so for now this hack
     int currentPlayer = getCurrentPlayer()->playerNumber() * 128;
     int pieceColor = bit.gameTag() & 128;
-    if (pieceColor == currentPlayer) return true;
-    return false;
+    if (pieceColor != currentPlayer) return false;
+
+    bool returnVal = false;
+    ChessSquare* square = (ChessSquare *)&src;
+    if (square) {
+        int squareIndex = square->getSquareIndex();
+        for (auto move : _moves) {
+            if (move.from == squareIndex) {
+                returnVal = true;
+                auto dest = _grid->getSquareByIndex(move.to);
+                dest->setHighlighted(true);
+            }
+        }
+    }
+
+    return returnVal;
 }
 
 bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
-    return true;
+    ChessSquare* srdsquare = (ChessSquare *)&src;
+    ChessSquare* square = (ChessSquare *)&dst;
+    if (square) {
+        int squareIndex = square->getSquareIndex();
+        for (auto move : _moves) {
+            if (move.to == squareIndex && move.from == srdsquare->getSquareIndex()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void Chess::stopGame()
@@ -179,4 +212,58 @@ void Chess::setStateString(const std::string &s)
             square->setBit(nullptr);
         }
     });
+}
+
+BitboardElement Chess::generateKnightMoveBitboard(int square) {
+    BitboardElement bitboard = 0ULL;
+    int rank = square / 8;
+    int file = square % 8;
+
+    std::pair<int, int> knightOffsets[] = {
+        { 2, 1 }, { 2, -1 }, { -2, 1 }, { -2, -1 },
+        { 1, 2 }, { 1, -2 }, { -1, 2 }, { -1, -2 }
+    };
+
+    constexpr uint64_t oneBit = 1;
+    for (auto [dr, df] : knightOffsets) {
+        int r = rank + dr, f = file + df;
+        if (r >= 0 && r < 8 && f >= 0 && f < 8) {
+            bitboard |= oneBit << (r * 8 + f);
+        }
+    }
+
+    return bitboard;
+}
+
+void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t emptySquares) {
+    knightBoard.forEachBit([&](int fromSquare) {
+        BitboardElement moveBitboard = BitboardElement(_knightBitboards[fromSquare].getData() & emptySquares);
+        moveBitboard.forEachBit([&](int toSquare) {
+            moves.emplace_back(fromSquare, toSquare, Knight);
+        });
+    });
+}
+
+std::vector<BitMove> Chess::generateAllMoves()
+{
+    std::vector<BitMove> moves;
+    moves.reserve(32);
+    std::string state = stateString();
+
+    uint64_t whiteKnights = 0ULL;
+    uint64_t whitePawns = 0ULL;
+
+    for (int i = 0; i < 64; i++) {
+        if (state[i] == 'N') {
+            whiteKnights |= 1ULL << i;
+        } else if (state[i] == 'P') {
+            whitePawns |= 1ULL << i;
+        }
+    }
+
+    uint64_t occupancy = whiteKnights | whitePawns;
+    generateKnightMoves(moves, whiteKnights, ~occupancy);
+    // generatePawnMoveList(moves, whitePawns, ~occupancy, WHITE);
+
+    return moves;
 }

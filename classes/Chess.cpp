@@ -384,14 +384,15 @@ std::vector<BitMove> Chess::generateAllMoves()
             }
     }
 
+    uint64_t allOccupancy = whiteOccupancy | blackOccupancy;
     // Generate White Moves
     generateKnightMoves(moves, whiteKnights, ~whiteOccupancy);
-    generatePawnMoveList(moves, whitePawns, ~whiteOccupancy, blackOccupancy, WHITE);
+    generatePawnMoveList(moves, whitePawns, ~allOccupancy, blackOccupancy, WHITE);
     generateKingMoves(moves, whiteKing, ~whiteOccupancy);
 
     // Generate Black Moves
     generateKnightMoves(moves, blackKnights, ~blackOccupancy);
-    generatePawnMoveList(moves, blackPawns, ~blackOccupancy, whiteOccupancy, BLACK);
+    generatePawnMoveList(moves, blackPawns, ~allOccupancy, whiteOccupancy, BLACK);
     generateKingMoves(moves, blackKing, ~blackOccupancy);
 
     return moves;

@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Grid.h"
 #include "Bitboard.h" 
+#include "MagicBitboards.h"
 
 #define WHITE 1
 #define BLACK -1
@@ -34,6 +35,8 @@ constexpr uint64_t NOT_FILE_G = ~FILE_G;
 constexpr uint64_t NOT_FILE_H = ~FILE_H;
 constexpr uint64_t NOT_FILE_AB = ~(FILE_A | FILE_B);
 constexpr uint64_t NOT_FILE_GH = ~(FILE_G | FILE_H);
+constexpr int negInfinite = -1000000;
+constexpr int posInfinite = +1000000;
 
 class Chess : public Game
 {
@@ -61,6 +64,7 @@ public:
 
 private:
     std::vector<BitMove> _moves;
+    int _currentPlayer = 999;
 
     BitboardElement _knightBitboards[64];
     BitboardElement _kingBitboards[64];
@@ -69,9 +73,11 @@ private:
     Player* ownerAt(int x, int y) const;
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
+    void updateAI() override;
+    int negamax(std::string& state, int depth, int playerColor);
     void addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitboardElement bitBoard, const int shift);
     void generatePawnMoveList(std::vector<BitMove>& moves, const BitboardElement Pawns, const BitboardElement emptySquares, const BitboardElement enemyPieces, char color);
-    std::vector<BitMove> generateAllMoves();
+    std::vector<BitMove> generateAllMoves(const std::string& state, int playerColor);
     void generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t emptySquares);
     BitboardElement generateKnightMoveBitboard(int square);
     void generateKingMoves(std::vector<BitMove>& moves, BitboardElement kingBoard, uint64_t emptySquares);

@@ -54,6 +54,7 @@ void Chess::setUpBoard()
     _kingBitboards[sq] = generateKingMoveBitboard(sq);
     }
 
+    _currentPlayer = WHITE;
     _moves = generateAllMoves();
     startGame();
 }
@@ -324,11 +325,10 @@ void Chess::generateKingMoves(std::vector<BitMove>& moves, BitboardElement kingB
     });
 }
 
-std::vector<BitMove> Chess::generateAllMoves()
+std::vector<BitMove> Chess::generateAllMoves(const std::string& state, int playerColor)
 {
     std::vector<BitMove> moves;
     moves.reserve(32);
-    std::string state = stateString();
 
     // White Piece Positions
     uint64_t whiteKnights = 0ULL;
@@ -396,4 +396,70 @@ std::vector<BitMove> Chess::generateAllMoves()
     generateKingMoves(moves, blackKing, ~blackOccupancy);
 
     return moves;
+}
+
+void Chess::updateAI() 
+{
+    int bestVal = negInfinite;
+    BitMove* bestMove = nullptr;
+    std::string state = stateString();
+
+    for(auto move : newMoves) {
+        int srcSquare = move.from;
+        int dstSquare = move.to;
+
+        char oldDst = state[dstSquare];
+        char srcPce = state[srcSquare];
+        state[dstSquare] = state[srcSquare];
+        state[srcSquare] = '0';
+        // Undo Move
+        int moveVal = negamax(state, 5, negInfinite);
+        state[dstSquare] = oldDst;
+        state[srcSquare] = srcPce;
+        // If the value of the current move is more than the best value, update best
+        if (moveVal > bestVal) {
+            bestMove = move;
+            bestVal = moveVal;
+        }
+    }
+    // Make the best move
+}
+
+int Chess::negamax(std::string& state, int depth, int playerColor) 
+{
+    _countMoves++;
+
+    if (depth == 0) {
+        return evaluateBoard(state) * playerColor;
+    }
+
+    auto newMoves = generateAllMoves(state, playerColor);
+
+    int bestVal = negamax(); // Min value
+
+    return bestVal;
+}
+
+int evaluateBoard(std::string state) {
+    int values[128];
+    values['P'] = 100;
+    values['N'] = 300;
+    values['B'] = 400;
+    values['R'] = 500;
+    values['Q'] = 900;
+    values['K'] = 2000;
+    values['p'] = -100;
+    values['n'] = -300;
+    values['b'] = -400;
+    values['r'] = -500;
+    values['q'] = -900;
+    values['k'] = -2000;
+
+    values['0'] = 0;
+    int score = 0;
+    for(char ch: state) {
+        score += values[ch];
+    }
+
+    return score;
 }

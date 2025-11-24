@@ -1,6 +1,7 @@
 #include "Chess.h"
 #include <limits>
 #include <cmath>
+#include "MagicBitboards.h"
 
 Chess::Chess()
 {
@@ -439,6 +440,8 @@ int Chess::negamax(std::string& state, int depth, int playerColor)
 
     return bestVal;
 }
+
+#define FLIP(x) (x^56)
 
 int evaluateBoard(std::string state) {
     int values[128];

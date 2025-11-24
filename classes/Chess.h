@@ -65,6 +65,7 @@ public:
 private:
     std::vector<BitMove> _moves;
     int _currentPlayer = 999;
+    int _countMoves = 0;
 
     BitboardElement _knightBitboards[64];
     BitboardElement _kingBitboards[64];

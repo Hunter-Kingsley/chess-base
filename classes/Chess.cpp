@@ -386,10 +386,6 @@ std::vector<BitMove> Chess::generateAllMoves()
     for (int i = 0; i < 64; i++) {
         int bitIndex = _bitboardLookup[state[i]];
         _bitboards[bitIndex] |= 1ULL << i;
-        if (state[i] != '0') {
-            _bitboards[OCCUPANCY] |= 1ULL << i;
-            _bitboards[isupper(state[i]) ? WHITE_ALL_PIECES : BLACK_ALL_PIECES];
-        }
     }
 
     _bitboards[WHITE_ALL_PIECES] = _bitboards[WHITE_PAWNS].getData() |

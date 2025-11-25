@@ -2,8 +2,7 @@
 
 #include "Game.h"
 #include "Grid.h"
-#include "Bitboard.h" 
-#include "MagicBitboards.h"
+#include "Bitboard.h"
 
 #define WHITE 1
 #define BLACK -1
@@ -37,6 +36,27 @@ constexpr uint64_t NOT_FILE_AB = ~(FILE_A | FILE_B);
 constexpr uint64_t NOT_FILE_GH = ~(FILE_G | FILE_H);
 constexpr int negInfinite = -1000000;
 constexpr int posInfinite = +1000000;
+
+enum AllBitBoards
+{
+    WHITE_PAWNS,
+    WHITE_KNIGHTS,
+    WHITE_BISHOPS,
+    WHITE_ROOKS,
+    WHITE_QUEENS,
+    WHITE_KING,
+    WHITE_ALL_PIECES,
+    BLACK_PAWNS,
+    BLACK_KNIGHTS,
+    BLACK_BISHOPS,
+    BLACK_ROOKS,
+    BLACK_QUEENS,
+    BLACK_KING,
+    BLACK_ALL_PIECES,
+    OCCUPANCY,
+    EMPTY_SQUARES,
+    e_numBitboards
+};
 
 class Chess : public Game
 {
@@ -74,15 +94,20 @@ private:
     Player* ownerAt(int x, int y) const;
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
-    void updateAI() override;
+    // void updateAI() override;
     int negamax(std::string& state, int depth, int playerColor);
     void addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitboardElement bitBoard, const int shift);
     void generatePawnMoveList(std::vector<BitMove>& moves, const BitboardElement Pawns, const BitboardElement emptySquares, const BitboardElement enemyPieces, char color);
-    std::vector<BitMove> generateAllMoves(const std::string& state, int playerColor);
+    std::vector<BitMove> generateAllMoves();
     void generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t emptySquares);
     BitboardElement generateKnightMoveBitboard(int square);
     void generateKingMoves(std::vector<BitMove>& moves, BitboardElement kingBoard, uint64_t emptySquares);
     BitboardElement generateKingMoveBitboard(int square);
+    void generateBishopMoves(std::vector<BitMove>& moves, BitboardElement piecesBoard, uint64_t occupancy, uint64_t friendlies);
+    void generateRookMoves(std::vector<BitMove>& moves, BitboardElement piecesBoard, uint64_t occupancy, uint64_t friendlies);
+    void generateQueenMoves(std::vector<BitMove>& moves, BitboardElement piecesBoard, uint64_t occupancy, uint64_t friendlies);
 
+    BitboardElement _bitboards[e_numBitboards];
+    int _bitboardLookup[128];
     Grid* _grid;
 };

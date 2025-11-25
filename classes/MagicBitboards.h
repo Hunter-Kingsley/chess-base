@@ -98,7 +98,7 @@ static inline uint64_t batt(int sq, uint64_t block) {
 static inline uint64_t indexToUint64(int index, int bits, uint64_t m) {
     uint64_t result = 0ULL;
     for (int i = 0; i < bits; i++) {
-        uint64_t least_bit = m & -m;  // get least significant bit
+        uint64_t least_bit = m & (~m + 1ULL);  // get least significant bit (avoid unary - on unsigned)
         if (index & (1 << i)) {
             result |= least_bit;
         }

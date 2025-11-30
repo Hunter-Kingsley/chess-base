@@ -425,6 +425,7 @@ void Chess::updateAI()
     int bestVal = negInfinite;
     BitMove bestMove;
     std::string state = stateString();
+    _countMoves = 0;
 
     for(auto move : _moves) {
         int srcSquare = move.from;
@@ -482,13 +483,14 @@ int Chess::negamax(std::string& state, int depth, int alpha, int beta, int playe
         char srcPce = state[srcSquare];
         state[dstSquare] = srcPce;
         state[srcSquare] = '0';
-        int moveVal = -negamax(state, depth - 1, -beta, -alpha, -playerColor);
+        bestVal = std::max(bestVal, -negamax(state, depth - 1, -beta, -alpha, -playerColor));
         // Undo Move
         state[dstSquare] = oldDst;
         state[srcSquare] = srcPce;
-        // If the value of the current move is more than the best value, update best
-        if (moveVal > bestVal) {
-            bestVal = moveVal;
+        // alpha/beta cut off
+        alpha = std::max(alpha, bestVal);
+        if (alpha >= beta) {
+            break;
         }
     }
     return bestVal;

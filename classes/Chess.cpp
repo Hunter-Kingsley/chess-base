@@ -2,6 +2,7 @@
 #include <limits>
 #include <cmath>
 #include "MagicBitboards.h"
+#include "PieceSquare.h"
 
 Chess::Chess()
 {

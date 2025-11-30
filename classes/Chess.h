@@ -94,14 +94,14 @@ private:
     Player* ownerAt(int x, int y) const;
     void FENtoBoard(const std::string& fen);
     char pieceNotation(int x, int y) const;
-    // void updateAI() override;
+    bool gameHasAI() override { return true; }
     int negamax(std::string& state, int depth, int alpha, int beta, int playerColor);
     int evaluateBoard(const std::string& state);
     void updateAI() override;
     void addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitboardElement bitBoard, const int shift);
     void generatePawnMoveList(std::vector<BitMove>& moves, const BitboardElement Pawns, const BitboardElement emptySquares, const BitboardElement enemyPieces, char color);
     std::vector<BitMove> generateAllMoves(const std::string& state, int playerColor);
-    void generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t emptySquares);
+    void generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t friendlies);
     BitboardElement generateKnightMoveBitboard(int square);
     void generateKingMoves(std::vector<BitMove>& moves, BitboardElement kingBoard, uint64_t emptySquares);
     BitboardElement generateKingMoveBitboard(int square);

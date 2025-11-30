@@ -311,9 +311,9 @@ BitboardElement Chess::generateKnightMoveBitboard(int square) {
     return bitboard;
 }
 
-void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t emptySquares) {
+void Chess::generateKnightMoves(std::vector<BitMove>& moves, BitboardElement knightBoard, uint64_t friendlies) {
     knightBoard.forEachBit([&](int fromSquare) {
-        BitboardElement moveBitboard = BitboardElement(_knightBitboards[fromSquare].getData() & emptySquares);
+        BitboardElement moveBitboard = BitboardElement(_knightBitboards[fromSquare].getData() & ~friendlies);
         moveBitboard.forEachBit([&](int toSquare) {
             moves.emplace_back(fromSquare, toSquare, Knight);
         });
@@ -355,7 +355,7 @@ void Chess::generateBishopMoves(std::vector<BitMove>& moves, BitboardElement pie
     piecesBoard.forEachBit([&](int fromSquare){
         BitboardElement moveBitBoard = BitboardElement(getBishopAttacks(fromSquare, occupancy) & ~friendlies);
         moveBitBoard.forEachBit([&](int toSquare){
-            moves.emplace_back(fromSquare, toSquare, King);
+            moves.emplace_back(fromSquare, toSquare, Bishop);
         });
     });
 }
@@ -364,7 +364,7 @@ void Chess::generateRookMoves(std::vector<BitMove>& moves, BitboardElement piece
     piecesBoard.forEachBit([&](int fromSquare){
         BitboardElement moveBitBoard = BitboardElement(getRookAttacks(fromSquare, occupancy) & ~friendlies);
         moveBitBoard.forEachBit([&](int toSquare){
-            moves.emplace_back(fromSquare, toSquare, King);
+            moves.emplace_back(fromSquare, toSquare, Rook);
         });
     });
 }
@@ -373,7 +373,7 @@ void Chess::generateQueenMoves(std::vector<BitMove>& moves, BitboardElement piec
     piecesBoard.forEachBit([&](int fromSquare){
         BitboardElement moveBitBoard = BitboardElement(getQueenAttacks(fromSquare, occupancy) & ~friendlies);
         moveBitBoard.forEachBit([&](int toSquare){
-            moves.emplace_back(fromSquare, toSquare, King);
+            moves.emplace_back(fromSquare, toSquare, Queen);
         });
     });
 }
@@ -410,7 +410,7 @@ std::vector<BitMove> Chess::generateAllMoves(const std::string& state, int playe
     int bitIndex = playerColor == WHITE ? WHITE_PAWNS : BLACK_PAWNS;
     int oppBitIndex = playerColor == WHITE ? BLACK_PAWNS : WHITE_PAWNS;
 
-    generateKnightMoves(moves, _bitboards[WHITE_KNIGHTS + bitIndex], ~_bitboards[OCCUPANCY].getData());
+    generateKnightMoves(moves, _bitboards[WHITE_KNIGHTS + bitIndex], _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
     generatePawnMoveList(moves, _bitboards[WHITE_PAWNS + bitIndex], ~_bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + oppBitIndex].getData(), playerColor);
     generateKingMoves(moves, _bitboards[WHITE_KING + bitIndex], ~_bitboards[OCCUPANCY].getData());
     generateBishopMoves(moves, _bitboards[WHITE_BISHOPS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());

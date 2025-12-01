@@ -28,6 +28,9 @@
     <ClCompile Include="C:\Users\their\Documents\GitHub\chess-base\classes\Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\their\Documents\GitHub\chess-base\classes\GameState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\their\Documents\GitHub\chess-base\classes\Sprite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

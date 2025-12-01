@@ -7,6 +7,7 @@ C:\Users\their\Documents\GitHub\chess-base\imgui\imgui.cpp;C:\Users\their\Docume
 C:\Users\their\Documents\GitHub\chess-base\classes\Bit.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\Bit.obj
 C:\Users\their\Documents\GitHub\chess-base\classes\BitHolder.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\BitHolder.obj
 C:\Users\their\Documents\GitHub\chess-base\classes\Game.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\Game.obj
+C:\Users\their\Documents\GitHub\chess-base\classes\GameState.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\GameState.obj
 C:\Users\their\Documents\GitHub\chess-base\classes\Sprite.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\Sprite.obj
 C:\Users\their\Documents\GitHub\chess-base\classes\Square.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\Square.obj
 C:\Users\their\Documents\GitHub\chess-base\classes\ChessSquare.cpp;C:\Users\their\Documents\GitHub\chess-base\build\demo.dir\Debug\ChessSquare.obj

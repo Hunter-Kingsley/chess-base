@@ -56,6 +56,7 @@ add_executable(demo Application.cpp
                           classes/Bit.cpp
                           classes/BitHolder.cpp
                           classes/Game.cpp
+                          classes/GameState.cpp
                           classes/Sprite.cpp
                           classes/Square.cpp
                           classes/ChessSquare.cpp

@@ -98,7 +98,7 @@ static inline uint64_t batt(int sq, uint64_t block) {
 static inline uint64_t indexToUint64(int index, int bits, uint64_t m) {
     uint64_t result = 0ULL;
     for (int i = 0; i < bits; i++) {
-        uint64_t least_bit = m & (~m + 1ULL);  // get least significant bit (avoid unary - on unsigned)
+        uint64_t least_bit = m & (~m + 1ULL);  // get least significant bit
         if (index & (1 << i)) {
             result |= least_bit;
         }
@@ -828,7 +828,7 @@ static inline uint64_t getQueenAttacks(int square, uint64_t occupied) {
 }
 
 // Initialize magic bitboards
-void initMagicBitboards(void) {
+inline void initMagicBitboards(void) {
     int square, i;
     uint64_t subset, index;
 
@@ -862,7 +862,7 @@ void initMagicBitboards(void) {
 }
 
 // Cleanup magic bitboard tables
-void cleanupMagicBitboards(void) {
+inline void cleanupMagicBitboards(void) {
     int square;
     for (square = 0; square < 64; square++) {
         delete[] RAttacks[square];

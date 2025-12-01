@@ -6,6 +6,7 @@
 #include "MagicBitboards.h"
 #include "PieceSquare.h"
 #include "GameState.h"
+#include "ChessSquare.h"
 
 static int actualPS[128][64];
 #define FLIP(x) (x^56)
@@ -222,6 +223,23 @@ bool Chess::canBitMoveFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 
 void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
 {
+    // Logic for pawn promotion
+    int tag = bit.gameTag();
+    bool isPawn = (tag & 127) == Pawn;
+    if (isPawn) {
+        ChessSquare* sq = dynamic_cast<ChessSquare*>(&dst);
+        if (sq) {
+            int row = sq->getRow();
+            if ((tag < 128 && row == 7) || (tag >= 128 && row == 0)) {
+                int playerNumber = (tag >= 128) ? 1 : 0;
+                Bit* promoted = PieceForPlayer(playerNumber, Queen);
+                promoted->setGameTag((playerNumber == 0) ? Queen : (Queen + 128));
+                dst.setBit(promoted);
+                promoted->setPosition(dst.getPosition());
+            }
+        }
+    }
+
     _currentPlayer = _currentPlayer == WHITE ? BLACK : WHITE;
     currGameState.init(stateString().c_str(), _currentPlayer);
     _moves = currGameState.generateAllMoves();
@@ -306,7 +324,7 @@ void Chess::updateAI()
         char srcPce = state[srcSquare];
         state[dstSquare] = srcPce;
         state[srcSquare] = '0';
-        int moveVal = -negamax(currGameState, 5, negInfinite, posInfinite);
+        int moveVal = -negamax(currGameState, 3, negInfinite, posInfinite);
         // Undo Move
         state[dstSquare] = oldDst;
         state[srcSquare] = srcPce;

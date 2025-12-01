@@ -58,8 +58,12 @@ void GameState::addPawnBitboardMovesToList(std::vector<BitMove>& moves, const Bi
     if (bitboard.getData() == 0)
         return;
     bitboard.forEachBit([&](int toSquare) {
-        int fromSquare = toSquare - shift; // Correct calculation for fromSquare
-        moves.emplace_back(fromSquare, toSquare, Pawn);
+        int mflags = 0;
+        if ((shift > 0 && toSquare >= 56) || (shift < 0 && toSquare <= 7)) {
+            mflags |= IsPromotion;
+        }
+        int fromSquare = toSquare - shift;
+        moves.emplace_back(fromSquare, toSquare, Pawn, mflags);
     });
 }
 

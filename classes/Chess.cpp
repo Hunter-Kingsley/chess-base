@@ -241,6 +241,50 @@ void Chess::bitMovedFromTo(Bit &bit, BitHolder &src, BitHolder &dst)
     }
 
     _currentPlayer = _currentPlayer == WHITE ? BLACK : WHITE;
+    
+    // Logic for Castling
+    ChessSquare* srcSq = dynamic_cast<ChessSquare*>(&src);
+    ChessSquare* dstSq = dynamic_cast<ChessSquare*>(&dst);
+    if (srcSq && dstSq) {
+        int srcCol = srcSq->getColumn();
+        int dstCol = dstSq->getColumn();
+        int srcRow = srcSq->getRow();
+        int dstRow = dstSq->getRow();
+        int tag = bit.gameTag();
+        if ((tag & 127) == King && srcRow == dstRow && abs(dstCol - srcCol) == 2) {
+            int dstIdx = dstSq->getSquareIndex();
+            if (dstCol > srcCol) {
+                // King-side castling
+                int rookFrom = dstIdx + 1;
+                int rookTo = dstIdx - 1;
+                if (rookFrom >= 0 && rookFrom < 64 && rookTo >= 0 && rookTo < 64) {
+                    BitHolder& rsrc = getHolderAt(rookFrom & 7, rookFrom / 8);
+                    BitHolder& rdst = getHolderAt(rookTo & 7, rookTo / 8);
+                    Bit* rookBit = rsrc.bit();
+                    if (rookBit) {
+                        rdst.dropBitAtPoint(rookBit, ImVec2(0, 0));
+                        rsrc.setBit(nullptr);
+                        rookBit->setPosition(rdst.getPosition());
+                    }
+                }
+            } else {
+                // Queen-side castling
+                int rookFrom = dstIdx - 2;
+                int rookTo = dstIdx + 1;
+                if (rookFrom >= 0 && rookFrom < 64 && rookTo >= 0 && rookTo < 64) {
+                    BitHolder& rsrc = getHolderAt(rookFrom & 7, rookFrom / 8);
+                    BitHolder& rdst = getHolderAt(rookTo & 7, rookTo / 8);
+                    Bit* rookBit = rsrc.bit();
+                    if (rookBit) {
+                        rdst.dropBitAtPoint(rookBit, ImVec2(0, 0));
+                        rsrc.setBit(nullptr);
+                        rookBit->setPosition(rdst.getPosition());
+                    }
+                }
+            }
+        }
+    }
+
     currGameState.init(stateString().c_str(), _currentPlayer);
     _moves = currGameState.generateAllMoves();
     _grid->forEachSquare([](ChessSquare* sq, int x, int y) {

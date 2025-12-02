@@ -113,10 +113,53 @@ void GameState::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knight
 void GameState::generateKingMoves(std::vector<BitMove>& moves, BitBoard piecesBoard, uint64_t occupancy) {
     piecesBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(KingAttacks[fromSquare] & occupancy);
-        // Efficiently iterate through only the set bits
+        // Efficiently iterate through only the set bits (normal king moves)
         moveBitboard.forEachBit([&](int toSquare) {
            moves.emplace_back(fromSquare, toSquare, King);
         });
+
+        // Generate Castling Moves
+        const char myKingChar = (color == WHITE) ? 'K' : 'k';
+        const char myRookChar = (color == WHITE) ? 'R' : 'r';
+        const int opponentColor = (color == WHITE) ? BLACK : WHITE;
+
+        if (state[fromSquare] == myKingChar) {
+            if (color == WHITE && fromSquare == 4) {
+                // White King-side
+                if (state[7] == myRookChar && state[5] == '0' && state[6] == '0') {
+                    if (!isSquareAttacked(4, opponentColor, _bitboards) &&
+                        !isSquareAttacked(5, opponentColor, _bitboards) &&
+                        !isSquareAttacked(6, opponentColor, _bitboards)) {
+                        moves.emplace_back(4, 6, King, KingSideCastle);
+                    }
+                }
+                // White Queen-side
+                if (state[0] == myRookChar && state[1] == '0' && state[2] == '0' && state[3] == '0') {
+                    if (!isSquareAttacked(4, opponentColor, _bitboards) &&
+                        !isSquareAttacked(3, opponentColor, _bitboards) &&
+                        !isSquareAttacked(2, opponentColor, _bitboards)) {
+                        moves.emplace_back(4, 2, King, QueenSideCastle);
+                    }
+                }
+            } else if (color == BLACK && fromSquare == 60) {
+                // Black king-side
+                if (state[63] == myRookChar && state[61] == '0' && state[62] == '0') {
+                    if (!isSquareAttacked(60, opponentColor, _bitboards) &&
+                        !isSquareAttacked(61, opponentColor, _bitboards) &&
+                        !isSquareAttacked(62, opponentColor, _bitboards)) {
+                        moves.emplace_back(60, 62, King, KingSideCastle);
+                    }
+                }
+                // Black queen-side
+                if (state[56] == myRookChar && state[57] == '0' && state[58] == '0' && state[59] == '0') {
+                    if (!isSquareAttacked(60, opponentColor, _bitboards) &&
+                        !isSquareAttacked(59, opponentColor, _bitboards) &&
+                        !isSquareAttacked(58, opponentColor, _bitboards)) {
+                        moves.emplace_back(60, 58, King, QueenSideCastle);
+                    }
+                }
+            }
+        }
     });
 }
 

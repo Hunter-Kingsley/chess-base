@@ -3,6 +3,7 @@
 #include <cmath>
 #include <chrono>
 #include <iomanip>
+#include <sstream>
 #include "MagicBitboards.h"
 #include "PieceSquare.h"
 #include "GameState.h"
@@ -112,7 +113,15 @@ void Chess::setUpBoard()
     _moves = currGameState.generateAllMoves();
 
     if (gameHasAI()) {
-        setAIPlayer(AI_PLAYER);
+        // Respect GameOptions set by the UI/launcher.
+        // If AI vs AI was requested, mark both players as AI.
+        if (_gameOptions.AIvsAI) {
+            setAIPlayer(0);
+            setAIPlayer(1);
+            _gameOptions.AIPlaying = true;
+        } else if (_gameOptions.AIPlayer >= 0 && _gameOptions.AIPlayer < (int)_players.size()) {
+            setAIPlayer(_gameOptions.AIPlayer);
+        }
     }
 
     startGame();
@@ -354,24 +363,20 @@ void Chess::setStateString(const std::string &s)
 
 void Chess::updateAI() 
 {
+    _lastAIMove = BitMove();  // Reset last AI move (add this at the top of updateAI())
+
     int bestVal = negInfinite;
     BitMove bestMove;
-    std::string state = stateString();
-    const auto searchStart = std::chrono::steady_clock::now();
     _countMoves = 0;
+    const auto searchStart = std::chrono::steady_clock::now();
 
     for(auto move : _moves) {
-        int srcSquare = move.from;
-        int dstSquare = move.to;
-
-        char oldDst = state[dstSquare];
-        char srcPce = state[srcSquare];
-        state[dstSquare] = srcPce;
-        state[srcSquare] = '0';
+        currGameState.pushMove(move);
         int moveVal = -negamax(currGameState, 6, negInfinite, posInfinite);
-        // Undo Move
-        state[dstSquare] = oldDst;
-        state[srcSquare] = srcPce;
+
+        // Undo move
+        currGameState.popState();
+
         // If the value of the current move is more than the best value, update best
         if (moveVal > bestVal) {
             bestMove = move;
@@ -381,22 +386,22 @@ void Chess::updateAI()
 
     // Make the best move
     if(bestVal != negInfinite) {
+        _lastAIMove = bestMove;
         const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - searchStart).count();
         const double boardsPerSecond = seconds > 0.0 ? static_cast<double>(_countMoves) / seconds : 0.0;
         std::cout << "Moves checked: " << _countMoves
                 << " (" << std::fixed << std::setprecision(2) << boardsPerSecond
                 << " boards/s)" << std::defaultfloat << std::endl;
+
         int srcSquare = bestMove.from;
         int dstSquare = bestMove.to;
-        BitHolder& src = getHolderAt(srcSquare&7, srcSquare/8);
-        BitHolder& dst = getHolderAt(dstSquare&7, dstSquare/8);
+        BitHolder& src = getHolderAt(srcSquare & 7, srcSquare / 8);
+        BitHolder& dst = getHolderAt(dstSquare & 7, dstSquare / 8);
         Bit* bit = src.bit();
         dst.dropBitAtPoint(bit, ImVec2(0, 0));
         src.setBit(nullptr);
         bitMovedFromTo(*bit, src, dst);
     }
-
-
 }
 
 int Chess::negamax(GameState& gameState, int depth, int alpha, int beta) 
@@ -432,4 +437,108 @@ int Chess::evaluateBoard(const GameState& gamestate) {
         value += actualPS[piece][square];
     }
     return value * gamestate.color;
+}
+
+// Tournament support: Set board from FEN and reinitialize game state for AI
+void Chess::setBoardFromFEN(const std::string& fen) {
+    // Parse FEN string - can be full FEN or just piece placement
+    std::string piecePlacement = fen;
+    std::string activeColor = "w";
+    std::string castling = "KQkq";
+    std::string enPassant = "-";
+
+    // Check if this is a full FEN string (has spaces)
+    size_t spacePos = fen.find(' ');
+    if (spacePos != std::string::npos) {
+        // Parse full FEN
+        std::istringstream fenStream(fen);
+        fenStream >> piecePlacement >> activeColor >> castling >> enPassant;
+    }
+
+    // Set visual board from piece placement
+    FENtoBoard(piecePlacement);
+
+    // Determine current player from FEN
+    _currentPlayer = (activeColor == "w" || activeColor == "W") ? WHITE : BLACK;
+
+    // Reinitialize game state so AI sees correct board
+    currGameState.init(stateString().c_str(), _currentPlayer);
+
+    // TODO: Parse castling rights and en passant from FEN for more accurate state
+    // For now, the basic state is sufficient for AI to calculate moves
+
+    // Generate legal moves for the new position
+    _moves = currGameState.generateAllMoves();
+
+    std::cout << "[Tournament] Board set from FEN. Player: "
+              << (_currentPlayer == WHITE ? "White" : "Black")
+              << ", Legal moves: " << _moves.size() << std::endl;
+}
+
+// Tournament support: Generate FEN string from current board
+std::string Chess::getFEN() const {
+    std::string fen;
+    fen.reserve(90);
+
+    // Piece placement (from rank 8 to rank 1)
+    for (int rank = 7; rank >= 0; --rank) {
+        int emptyCount = 0;
+        for (int file = 0; file < 8; ++file) {
+            char piece = pieceNotation(file, rank);
+            if (piece == '0') {
+                emptyCount++;
+            } else {
+                if (emptyCount > 0) {
+                    fen += std::to_string(emptyCount);
+                    emptyCount = 0;
+                }
+                fen += piece;
+            }
+        }
+        if (emptyCount > 0) {
+            fen += std::to_string(emptyCount);
+        }
+        if (rank > 0) {
+            fen += '/';
+        }
+    }
+
+    // Active color
+    fen += ' ';
+    fen += (_currentPlayer == WHITE) ? 'w' : 'b';
+
+    // Castling availability (simplified - always report based on piece positions)
+    fen += ' ';
+    std::string castling;
+
+    // Check if white can castle (king on e1, rooks on a1/h1)
+    char e1 = pieceNotation(4, 0);
+    char a1 = pieceNotation(0, 0);
+    char h1 = pieceNotation(7, 0);
+    if (e1 == 'K') {
+        if (h1 == 'R') castling += 'K';
+        if (a1 == 'R') castling += 'Q';
+    }
+
+    // Check if black can castle (king on e8, rooks on a8/h8)
+    char e8 = pieceNotation(4, 7);
+    char a8 = pieceNotation(0, 7);
+    char h8 = pieceNotation(7, 7);
+    if (e8 == 'k') {
+        if (h8 == 'r') castling += 'k';
+        if (a8 == 'r') castling += 'q';
+    }
+
+    fen += castling.empty() ? "-" : castling;
+
+    // En passant target square (simplified - report as '-')
+    fen += " -";
+
+    // Halfmove clock (simplified)
+    fen += " 0";
+
+    // Fullmove number (simplified)
+    fen += " 1";
+
+    return fen;
 }

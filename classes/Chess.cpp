@@ -119,8 +119,8 @@ void Chess::setUpBoard()
             setAIPlayer(0);
             setAIPlayer(1);
             _gameOptions.AIPlaying = true;
-        } else if (_gameOptions.AIPlayer >= 0 && _gameOptions.AIPlayer < (int)_players.size()) {
-            setAIPlayer(_gameOptions.AIPlayer);
+        } else {
+            setAIPlayer(1);
         }
     }
 

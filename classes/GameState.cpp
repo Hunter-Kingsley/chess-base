@@ -54,13 +54,17 @@ void GameState::shutdown() {
     cleanupMagicBitboards();
 }
 
-void GameState::addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitBoard bitboard, const int shift) {
+void GameState::addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitBoard bitboard, const int shift, bool isCapture) {
     if (bitboard.getData() == 0)
         return;
+    const int oppAllIdx = (color == WHITE) ? BLACK_ALL_PIECES : WHITE_ALL_PIECES;
     bitboard.forEachBit([&](int toSquare) {
         int mflags = 0;
         if ((shift > 0 && toSquare >= 56) || (shift < 0 && toSquare <= 7)) {
             mflags |= IsPromotion;
+        }
+        if (isCapture || ((_bitboards[oppAllIdx].getData() & (1ULL << toSquare)) != 0)) {
+            mflags |= IsCapture;
         }
         int fromSquare = toSquare - shift;
         moves.emplace_back(fromSquare, toSquare, Pawn, mflags);
@@ -88,14 +92,14 @@ void GameState::generatePawnMoveList(std::vector<BitMove>& moves, const BitBoard
     int captureRightShift = (color == WHITE) ? 9 : -7;
     
     // Add single pawn moves to the list
-    addPawnBitboardMovesToList(moves, singleMoves, shiftForward);
+    addPawnBitboardMovesToList(moves, singleMoves, shiftForward, false);
 
     // Add double pawn moves to the list
-    addPawnBitboardMovesToList(moves, doubleMoves, doubleShift);
+    addPawnBitboardMovesToList(moves, doubleMoves, doubleShift, false);
 
-    // Add pawn captures to the list
-    addPawnBitboardMovesToList(moves, capturesLeft, captureLeftShift);
-    addPawnBitboardMovesToList(moves, capturesRight, captureRightShift);
+    // Add pawn captures to the list (mark as captures)
+    addPawnBitboardMovesToList(moves, capturesLeft, captureLeftShift, true);
+    addPawnBitboardMovesToList(moves, capturesRight, captureRightShift, true);
 }
 
 // Generate actual move objects from a bitboard
@@ -103,9 +107,12 @@ void GameState::generateKnightMoves(std::vector<BitMove>& moves, BitBoard knight
     knightBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(KnightAttacks[fromSquare] & occupancy);
         // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Knight);
-        });
+          moveBitboard.forEachBit([&](int toSquare) {
+              int mflags = 0;
+              const int oppAllIdx = (color == WHITE) ? BLACK_ALL_PIECES : WHITE_ALL_PIECES;
+              if ((_bitboards[oppAllIdx].getData() & (1ULL << toSquare)) != 0) mflags |= IsCapture;
+              moves.emplace_back(fromSquare, toSquare, Knight, mflags);
+          });
     });
 }
 
@@ -114,9 +121,12 @@ void GameState::generateKingMoves(std::vector<BitMove>& moves, BitBoard piecesBo
     piecesBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(KingAttacks[fromSquare] & occupancy);
         // Efficiently iterate through only the set bits (normal king moves)
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, King);
-        });
+          moveBitboard.forEachBit([&](int toSquare) {
+              int mflags = 0;
+              const int oppAllIdx = (color == WHITE) ? BLACK_ALL_PIECES : WHITE_ALL_PIECES;
+              if ((_bitboards[oppAllIdx].getData() & (1ULL << toSquare)) != 0) mflags |= IsCapture;
+              moves.emplace_back(fromSquare, toSquare, King, mflags);
+          });
 
         // Generate Castling Moves
         const char myKingChar = (color == WHITE) ? 'K' : 'k';
@@ -169,9 +179,12 @@ void GameState::generateBishopMoves(std::vector<BitMove>& moves, BitBoard pieces
     piecesBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(getBishopAttacks(fromSquare, occupancy) & ~friendlies);
         // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Bishop);
-        });
+          moveBitboard.forEachBit([&](int toSquare) {
+              int mflags = 0;
+              const int oppAllIdx = (color == WHITE) ? BLACK_ALL_PIECES : WHITE_ALL_PIECES;
+              if ((_bitboards[oppAllIdx].getData() & (1ULL << toSquare)) != 0) mflags |= IsCapture;
+              moves.emplace_back(fromSquare, toSquare, Bishop, mflags);
+          });
     });
 }
 
@@ -180,9 +193,12 @@ void GameState::generateRooksMoves(std::vector<BitMove>& moves, BitBoard piecesB
     piecesBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(getRookAttacks(fromSquare, occupancy) & ~friendlies);
         // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Rook);
-        });
+          moveBitboard.forEachBit([&](int toSquare) {
+              int mflags = 0;
+              const int oppAllIdx = (color == WHITE) ? BLACK_ALL_PIECES : WHITE_ALL_PIECES;
+              if ((_bitboards[oppAllIdx].getData() & (1ULL << toSquare)) != 0) mflags |= IsCapture;
+              moves.emplace_back(fromSquare, toSquare, Rook, mflags);
+          });
     });
 }
 
@@ -191,9 +207,12 @@ void GameState::generateQueensMoves(std::vector<BitMove>& moves, BitBoard pieces
     piecesBoard.forEachBit([&](int fromSquare) {
         BitBoard moveBitboard = BitBoard(getQueenAttacks(fromSquare, occupancy) & ~friendlies);
         // Efficiently iterate through only the set bits
-        moveBitboard.forEachBit([&](int toSquare) {
-           moves.emplace_back(fromSquare, toSquare, Queen);
-        });
+          moveBitboard.forEachBit([&](int toSquare) {
+              int mflags = 0;
+              const int oppAllIdx = (color == WHITE) ? BLACK_ALL_PIECES : WHITE_ALL_PIECES;
+              if ((_bitboards[oppAllIdx].getData() & (1ULL << toSquare)) != 0) mflags |= IsCapture;
+              moves.emplace_back(fromSquare, toSquare, Queen, mflags);
+          });
     });
 }
 
@@ -421,6 +440,13 @@ std::vector<BitMove> GameState::generateAllMoves()
     generateQueensMoves(moves, _bitboards[WHITE_QUEENS + bitIndex], _bitboards[OCCUPANCY].getData(), _bitboards[WHITE_ALL_PIECES + bitIndex].getData());
 
     filterOutIllegalMoves(moves);
+
+    // Sort moves so captures are first (stable to preserve relative ordering)
+    std::stable_sort(moves.begin(), moves.end(), [](const BitMove &a, const BitMove &b) {
+        bool ac = (a.flags & IsCapture) != 0;
+        bool bc = (b.flags & IsCapture) != 0;
+        return ac && !bc;
+    });
 
     return moves;
 }

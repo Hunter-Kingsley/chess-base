@@ -141,7 +141,7 @@ private:
 
     void generateBishopMoves(std::vector<BitMove>& moves, BitBoard bishopBoard, uint64_t occupancy, uint64_t friendlies);
     void generatePawnMoveList(std::vector<BitMove>& moves, const BitBoard pawns, const BitBoard emptySquares, const BitBoard enemyPieces, char color);
-    void addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitBoard bitboard, const int shift);
+    void addPawnBitboardMovesToList(std::vector<BitMove>& moves, const BitBoard bitboard, const int shift, bool isCapture = false);
     bool isSquareAttacked(int square, char attackerColor, const BitBoard (&boards)[e_numBitboards]);
     void filterOutIllegalMoves(std::vector<BitMove>& moves);
 
